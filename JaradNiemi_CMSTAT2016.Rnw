@@ -41,7 +41,7 @@
 \begin{frame}
 \maketitle
 
-\vspace{0.2in} \pause
+\vspace{0.2in}
 
 {\small
 This research was supported by National Institute of General Medical Sciences (NIGMS) of the National Institutes of Health and the joint National Science Foundation / NIGMS Mathematical Biology Program under award number R01GM109458. The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health or the National Science Foundation.
@@ -62,13 +62,11 @@ This research was supported by National Institute of General Medical Sciences (N
 	\end{itemize}
 \item Modeling 
 	\begin{itemize}
-	\item Composite null hypothesis \pause
-	\item Hierarchical overdispersed count regression model \pause
+	\item Hierarchical overdispersed count regression model 
 	\end{itemize}
 \item Fully Bayes \pause on graphics processing units
 	\begin{itemize}
-	\item Memory transfers
-	\item Random number generation \pause
+	\item Minimizing memory transfers between GPU and CPU \pause
 	\end{itemize}
 \item Simulation studies
 	\begin{itemize}
@@ -140,57 +138,6 @@ Heterosis, or hybrid vigor, is the enhancement of the phenotype of hybrid progen
 
 
 \section{Modeling}
-\subsection{Composite null hypothesis}
-\begin{frame}
-\frametitle{Hypotheses}
-\setkeys{Gin}{width=0.2\textwidth}
-\footnotesize
-
-For a given gene, let 
-\begin{itemize}\scriptsize
-\item $\mu_{B\phantom{M}}$: mean expression for B73 inbred parent,
-\item $\mu_{M\phantom{B}}$: mean expression for Mo17 inbred parent,
-\item $\mu_{BM}$: mean expression for B73$\times$Mo17 F1 hybrid, and
-\item $\mu_{MB}$: mean expression for Mo17$\times$B73 F1 hybrid.
-\end{itemize}
-\pause
-We are interested in comparing hypotheses of the form
-\[ 
-H_0: \mu_{min} < \mu_{BM} < \mu_{max}, \qquad H_{LPH}: \mu_{BM} < \mu_{min}, \qquad H_{HPH}: \mu_{max} < \mu_{BM}
-\]
-where $\mu_{min} = \min(\mu_B,\mu_M)$ and $\mu_{max} = \max(\mu_B,\mu_M)$. 
-
-\vspace{0.1in} \pause
-
-<<echo=FALSE, out.width='0.3\\textwidth', fig.align='center', fig.width=4, fig.height=4>>=
-mB = expression(mu[B])
-mM = expression(mu[M])
-mBM = expression(mu[BM])
-
-opar = par(mar=rep(0,4)+.1)
-plot(0,0, type="n", axes=FALSE, xlab="", ylab="", xlim=c(-1,1), ylim=c(-1,1))
-polygon(c(0,-2,-2,0), c(0,2,-2,0), col='pink', border=NA)
-polygon(c(0, 2, 2,0), c(0,2,-2,0), col='pink', border=NA)
-abline(0, 1)
-abline(0,-1)
-abline(0,0,lty=2)
-text(-0.8, 1, expression(mu[B]==mu[BM]))
-text( 0.8, 1, expression(mu[BM]==mu[M]))
-text( 0.9,.05, expression(mu[B]==mu[M]))
-text( 0.0, 0.8, expression(paste(mu[B], "<", mu[BM] < mu[M])))
-text( 0.8, 0.5, expression(paste(mu[B], "<", mu[M] < mu[BM])))
-text( 0.8,-0.5, expression(paste(mu[M], "<", mu[B] < mu[BM])))
-text( 0.0,-0.8, expression(paste(mu[M], "<", mu[BM] < mu[B])))
-text(-0.8,-0.5, expression(paste(mu[BM], "<", mu[M] < mu[BM])))
-text(-0.8, 0.5, expression(paste(mu[BM], "<", mu[B] < mu[M])))
-text(-0.5, 0, "LPH", cex=2)
-text( 0.5, 0, "HPH", cex=2)
-par(opar)
-@
-\end{frame}
-
-
-
 \begin{frame}
 \frametitle{Posterior hypothesis probabilities}
 \small
@@ -204,8 +151,9 @@ then we could calculate the relevant hypothesis probabilities, i.e.
 \[ \begin{array}{rl}
 P(H_{0\phantom{PH}}|y) &= P(\mu_{min} < \mu_{BM} < \mu_{max}|y) \\
 P(H_{LPH}|y) &= P(\mu_{BM} < \mu_{min}|y) \\
-P(H_{HPH}|y) &= P(\mu_{max} < \mu_{BM}|y).
+P(H_{HPH}|y) &= P(\mu_{max} < \mu_{BM}|y)
 \end{array} \] 
+where $\mu_{min} = \min(\mu_B,\mu_M)$ and $\mu_{max} = \max(\mu_B,\mu_M)$.
 
 \vspace{0.1in} \pause
 
@@ -418,7 +366,7 @@ As we'll see, posterior distributions for these parameters are extremely tight r
 Conditional independence within a step:
 \[ \begin{array}{rl}
 p(\varepsilon|\ldots) &\propto \prod_{g=1}^G \prod_{n=1}^N Po\left(y_{gn}\left|e^{h_n+\varepsilon_{gn}+x_n'\beta_g}\right.\right)N(\varepsilon_{gn}|0,\gamma_g) \\
-p(\gamma|\ldots) &\propto \prod_{g=1}^G \prod_{n=1}^N N(\varepsilon_{gn}\left|0,\gamma_g\right.\right) IG(\gamma_g|\nu/2,\nu\tau/2) \\
+p(\gamma|\ldots) &\propto \prod_{g=1}^G \prod_{n=1}^N N\left(\varepsilon_{gn}\left|0,\gamma_g\right.\right) IG(\gamma_g|\nu/2,\nu\tau/2) \\
 p(\beta_{\ell}|\ldots) &\propto \prod_{g=1}^G \prod_{n=1}^N Po\left(y_{gn}\left|e^{h_n+\varepsilon_{gn}+x_n'\beta_g}\right.\right)N(\beta_{g\ell}|\theta_\ell, \sigma_\ell^2) 
 \end{array} \]
 
@@ -571,8 +519,6 @@ The computation for this hierarchical overdispersed count regression model is pr
 \item {\tt fbseqOpenMP}: multithreaded backend
 \item {\tt fbseqCUDA}: NVIDIA GPU backend
 \end{itemize}
-
-\pause
 
 <<setup,size="tiny">>=
 library(fbseq)
@@ -741,17 +687,11 @@ Effect size for HPH BM is the maximum of 0 and $\min(2\beta_{g2}+\beta_{g4}, 2\b
 \begin{frame}
 \frametitle{Summary}
 
-\begin{itemize}
-\item Introduced a hierarchical overdispersed count regression model and
-\item a GPU-implementation of a fully Bayesian analysis.
-\end{itemize}
-
-\vspace{0.2in} \pause
-
 Material available at
 \begin{itemize}
-\item slides code: \url{https://github.com/jarad/ISU2016}
-\item slides pdf: \url{http://www.jarad.me/research/presentations.html}
+\item R package: \url{http://github.com/wlandau/fbseq}
+\item slide code: \url{https://github.com/jarad/ISU2016}
+\item slide pdf: \url{http://www.jarad.me/research/presentations.html}
 \item pre-print: \url{https://arxiv.org/abs/1606.06659}
 \end{itemize}
 
